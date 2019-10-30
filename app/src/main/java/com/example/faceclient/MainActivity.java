@@ -18,14 +18,21 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.security.spec.ECField;
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.FormBody;
 import okhttp3.MediaType;
@@ -52,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         etIp=findViewById(R.id.et_ip);
         btnSend=findViewById(R.id.btn_send);
         btnTakePhoto=findViewById(R.id.btn_take_photo);
@@ -65,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
                 dispatchTakePictureIntent();
             }
         });
-
     }
 //
 //    ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,8 +125,9 @@ public class MainActivity extends AppCompatActivity {
                             .post(body)
                             .build();
 
-                    Response response=client.newCall(request).execute();
-                    String responseData=response.body().string();
+                    Response response=client.newCall(request).execute();//同步请求方式，若异步，execute改成enqueue
+                    String responseData=response.body().string();//todo:maybe wrong, how to deal with json?
+
                     showResponse(responseData);
 
                 }catch (Exception e){
@@ -130,9 +138,61 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showResponse(String responseData) {
+        Log.d(TAG, "showResponse: "+responseData);
+        try{
+            //todo:package it
+            List<Location> locationList=new ArrayList<>();
+            JSONObject jsonObject=new JSONObject(responseData);
+            JSONArray jsonArray= jsonObject.getJSONArray("locations");
+            for (int i=0;i<jsonArray.length();i++)
+            {
+                String temp=jsonArray.getString(i);
+                temp=temp.replace("[","");
+                temp=temp.replace("]","");
+                Log.d(TAG, temp);
+                String[] str_points=temp.split(",");
+                int[] points=new int[4];
+                for(int j=0;j<str_points.length;j++)
+                {
+                    points[j]=Integer.parseInt(str_points[j]);
+                }
+                Location location=new Location(points);
+                locationList.add(location);
+            }
+            Log.d(TAG, ""+locationList.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        Toast.makeText(this, ""+responseData, Toast.LENGTH_SHORT).show();
-//        Log.d(TAG, "showResponse: "+responseData);
+    private List<Location> handleLocation(String json_location) {
+        List<Location> result=null;
+        try {
+            JSONObject jsonObject=new JSONObject(json_location);
+            JSONArray jsonArray= jsonObject.getJSONArray("locations");
+            for (int i=0;i<jsonArray.length();i++)
+            {
+                String temp=jsonArray.getString(i);
+                temp=temp.replace("[","");
+                temp=temp.replace("]","");
+                Log.d(TAG, temp);
+                String[] str_points=temp.split(",");
+                int[] points=new int[4];
+                for(int j=0;j<str_points.length;j++)
+                {
+                    points[j]=Integer.parseInt(str_points[j]);
+                }
+                Location location=new Location(points);
+                result.add(location);
+            }
+            Log.d(TAG, "handleLocation: result length is :"+result.size());
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return result;
     }
 
 }
