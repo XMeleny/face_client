@@ -13,11 +13,11 @@
         android:id="@+id/et_ip"
         android:hint="please input id"/>
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_send"
-        android:text="send"/>
+<!--    <Button-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:id="@+id/btn_send"-->
+<!--        android:text="send"/>-->
 
 
     <Button
@@ -26,17 +26,22 @@
         android:id="@+id/btn_take_photo"
         android:text="take photo"/>
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_get_photo"
-        android:text="get photo"/>
+<!--    <Button-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:id="@+id/btn_get_photo"-->
+<!--        android:text="get photo"/>-->
 
-    <Button
-        android:layout_width="match_parent"
+<!--    <Button-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:id="@+id/btn_send_photo"-->
+<!--        android:text="send photo"/>-->
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/btn_send_photo"
-        android:text="send photo"/>
+        android:id="@+id/count"
+        />
 
     <ImageView
         android:layout_width="match_parent"
@@ -44,7 +49,7 @@
         android:id="@+id/iv_photo"/>
 
     <ImageView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/iv_temp"/>
 
