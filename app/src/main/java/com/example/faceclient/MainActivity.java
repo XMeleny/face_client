@@ -1,9 +1,11 @@
 package com.example.faceclient;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,8 +13,10 @@ import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.JsonReader;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -31,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
+import org.json.JSONStringer;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,14 +45,19 @@ import java.security.spec.ECField;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.internal.Util;
 import okio.BufferedSink;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -61,11 +70,17 @@ public class MainActivity extends AppCompatActivity {
     ImageView ivPhoto;
     ImageView ivTemp;
     TextView count;
+    TextView name;
+    JSONArray jsonNames,jsonStr;
+    List<Location> locationList=new ArrayList<>();
     public static int TAKE_PHOTO_REQUEST_CODE = 1; //拍照
     public static int PHOTO_REQUEST_CUT = 2; //裁切
     public static int PHOTO_REQUEST_GALLERY = 3; //相册
     public Uri imageUri;
+    static final int REQUEST_IMAGE_CAPTURE = 1;
 
+
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +92,10 @@ public class MainActivity extends AppCompatActivity {
         ivPhoto=findViewById(R.id.iv_photo);
         ivTemp=findViewById(R.id.iv_temp);
         count=findViewById(R.id.count);
+        name=findViewById(R.id.name);
+        ivPhoto.setAdjustViewBounds(true);
 
+//        int heightPixels = outMetrics.heightPixels;
 //        String img_str=ImageEncodeToString(BitmapFactory.decodeResource(getResources(), R.drawable.aaa, null));
 //        Log.d(TAG, img_str);
 //
@@ -87,18 +105,81 @@ public class MainActivity extends AppCompatActivity {
         btnTakePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d(TAG, "onClick: take photo");
 //                dispatchTakePictureIntent();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
                     StrictMode.setVmPolicy( builder.build() );
                 }
                 takePhotos();
+                name.setText("你点击的是的人叫？？？");
+                count.setText("照片中有？人");
+            }
+        });
+
+        ivPhoto.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                System.out.println("----onTouch----");
+                BitmapDrawable bitmapDrawable=(BitmapDrawable)ivPhoto.getDrawable();
+                //获取第一个图片显示框中的位图
+                Bitmap bitmap=bitmapDrawable.getBitmap();
+                //bitmap图片实际 大小与第一个imageView的缩放比例
+                DisplayMetrics outMetrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
+                double widthPixels = outMetrics.widthPixels;
+                double scale=bitmap.getWidth()/widthPixels;
+//                double scale=2;
+                System.out.println("----photo width----"+bitmap.getWidth());
+                System.out.println("----photo height----"+bitmap.getHeight());
+                System.out.println("----screen width----"+outMetrics.widthPixels);
+                System.out.println("----screen height----"+outMetrics.heightPixels);
+
+//int maxX=(int)(motionEvent.)
+                int x=(int)(motionEvent.getX()*scale);
+                int y=(int)(motionEvent.getY()*scale);
+//                int x=(int)(motionEvent.getX());
+//                int y=(int)(motionEvent.getY());
+                System.out.println("----x----"+x+" y  "+y);
+                int k=0;
+
+
+                for(int i=0;i<locationList.size();i++)
+                {
+                    Location l;
+                    l=locationList.get(i);
+                   if(x>=l.getLeft()&&x<=l.getRight()&&y>=l.getUp()&&y<=l.getDown())
+                   {
+                       System.out.println("----get name----" );
+                       k=1;
+
+                       try {
+                           String name1=jsonNames.getString(i);
+                           System.out.println("----click_name----"+name1);
+                           name.setText("你点击的是的人叫" + name1);
+                           //点击的人脸的预存图片
+                           String str = jsonStr.getString(i);
+                           Bitmap bitmap1 = stringToBitmap(str);
+                           ivTemp.setImageBitmap(bitmap1);
+                       }
+                       catch (Exception E)
+                       {
+                           E.printStackTrace();
+                       }
+                   }
+
+                }
+               if(k==0)
+                {
+                    name.setText("没有点击到人脸哦");
+                    ivTemp.setImageResource(R.drawable.black);
+                }
+
+                return false;
             }
         });
     }
-//
-//    ////////////////////////////////////////////////////////////////////////////////////////////////
-    static final int REQUEST_IMAGE_CAPTURE = 1;
+
     private void takePhotos() {
 
         imageUri = Uri.fromFile(getImageStoragePath(this));
@@ -140,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
     private Bitmap decodeUriBitmap(Uri uri) {
         Bitmap bitmap = null;
         try {
@@ -151,7 +231,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return bitmap;
     }
-
     //裁剪图片（可不要）
     public void startPhotoZoom(Uri uri) {
         Intent intent = new Intent("com.android.camera.action.CROP");
@@ -178,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("noFaceDetection", true);
         startActivityForResult(intent, PHOTO_REQUEST_CUT);
     }
-//选择相册图片（可选）
+    //选择相册图片（可选）
     private void choicePicFromAlbum() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
@@ -229,25 +308,71 @@ public class MainActivity extends AppCompatActivity {
         return bitmap;
     }
 
-        private void sendRequestWithOKHttp(final String image_str) {
+    private void sendRequestWithOKHttp(final String image_str) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
-                    OkHttpClient client=new OkHttpClient();
+                    OkHttpClient client=new OkHttpClient.Builder()
+                            .connectTimeout(100,TimeUnit.SECONDS)
+                            .readTimeout(100,TimeUnit.SECONDS)
+                            .build();
+
                     FormBody body=new FormBody.Builder()
                             .add("image_str",image_str)
+
                             .build();
+                    Log.d(TAG, "run: the image_str is :"+image_str);
                     String url=etIp.getText().toString();
-                    Request request=new Request.Builder()
+//                    Request request=new Request.Builder()
+//                            .url(url)
+//                            .post(body)
+//                            .build();
+//                    Log.d(TAG, "requesting in thread");
+
+//                    Response response=client.newCall(request).execute();//同步请求方式，若异步，execute改成enqueue
+//
+//
+//                    Log.d(TAG, "run: after the request executed");
+//
+//                    String responseData=response.body().string();//todo:maybe wrong, how to deal with json?
+//
+//                    Log.d(TAG, "run: "+responseData);
+//                    showResponse(responseData);
+
+                    Request request = new Request.Builder()
                             .url(url)
                             .post(body)
                             .build();
-                    Log.d(TAG, "request");
-                    Response response=client.newCall(request).execute();//同步请求方式，若异步，execute改成enqueue
-                    String responseData=response.body().string();//todo:maybe wrong, how to deal with json?
+                    //创建Call对象，代表实际的http请求，可以当做是Response与Request之间的桥梁
+                    Call call = client.newCall(request);
+                    call.enqueue(new Callback() {
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+                            Log.e("-----onFailure----", e.getMessage());
+                        }
 
-                    showResponse(responseData);
+                        @Override
+                        public void onResponse(Call call, Response response) throws IOException {
+                            String responseData=response.body().string();
+                            Log.e("-----response----", responseData);
+//                            showResponse(response.body().string());
+                            try {
+                                JSONObject jsonObject = new JSONObject(responseData);
+                                String image_str = jsonObject.optString("image_str");
+                                Log.e("-----image_str----", image_str);
+                                System.out.println("----获得处理后的图片编码----");
+                                Bitmap bitmap = stringToBitmap(image_str);
+                                ivPhoto.setImageBitmap(bitmap);
+                                System.out.println("----设置处理后的图片并且调用showResponse----");
+                                showResponse(responseData);
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
 
                 }catch (Exception e){
                     e.printStackTrace();
@@ -259,8 +384,9 @@ public class MainActivity extends AppCompatActivity {
     private void showResponse(String responseData) {
         Log.d(TAG, "showResponse: "+responseData);
         try{
+            Log.d(TAG, "----处理json---- ");
             //todo:package it
-            List<Location> locationList=new ArrayList<>();
+
             JSONObject jsonObject=new JSONObject(responseData);
             JSONArray jsonArray= jsonObject.getJSONArray("locations");
             for (int i=0;i<jsonArray.length();i++)
@@ -277,18 +403,26 @@ public class MainActivity extends AppCompatActivity {
                 }
                 Location location=new Location(points);
                 locationList.add(location);
+
+
             }
-//            JSONS jsonArrayImage= jsonObject.getJSONArray("image_str");
-            String image_str=jsonObject.optString("image_str");
-//            for (int i=0;i<jsonArrayImage.length();i++)
-//            {
-//                String temp=jsonArray.getString(i);
-                Bitmap bitmap=stringToBitmap(image_str);
-                ivPhoto.setImageBitmap(bitmap);
-//            }
+            for(int i=0;i<locationList.size();i++)
+            {
+                Location l;
+                l=locationList.get(i);
+                System.out.println("----top:"+l.getUp()+"   ----right:"+l.getRight()+"   ----down:"+l.getDown()+"   ----left:"+l.getLeft());
+
+            }
+            System.out.println("----locations----"+jsonArray);
             String count1=jsonObject.optString("count");
-            count.setText("人数："+count1);
-            Log.d(TAG, ""+locationList.size());
+            System.out.println("----count----"+count1);
+            jsonNames= jsonObject.getJSONArray("names");
+            System.out.println("----names----"+jsonNames);
+            count.setText("照片中有"+count1+"人");
+            jsonStr=jsonObject.getJSONArray("photo_str");
+            System.out.println("----Pre-store picture str----"+jsonStr);
+
+//            Log.d(TAG, ""+locationList.size());
         } catch (Exception e) {
             e.printStackTrace();
         }
