@@ -63,10 +63,9 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    EditText etIp;
-    Button btnSend;
+    EditText etIp,addfaceName;
+    Button addFace;
     Button btnTakePhoto;
-    Button btnGetPhoto;
     ImageView ivPhoto;
     ImageView ivTemp;
     TextView count,name,similarity;
@@ -94,7 +93,8 @@ public class MainActivity extends AppCompatActivity {
         name=findViewById(R.id.name);
         similarity=findViewById(R.id.similarity);
         ivPhoto.setAdjustViewBounds(true);
-
+        addFace=findViewById(R.id.btn_add_face);
+        addfaceName=findViewById(R.id.addFaceName);
 //        int heightPixels = outMetrics.heightPixels;
 //        String img_str=ImageEncodeToString(BitmapFactory.decodeResource(getResources(), R.drawable.aaa, null));
 //        Log.d(TAG, img_str);
@@ -102,20 +102,51 @@ public class MainActivity extends AppCompatActivity {
 //        Bitmap bitmap=stringToBitmap(img_str);
 //        ivPhoto.setImageBitmap(bitmap);
 
-        btnTakePhoto.setOnClickListener(new View.OnClickListener() {
+        addFace.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                Log.d(TAG, "onClick: take photo");
+            public void onClick(View view) {
+
+                Log.d(TAG, "onClick: add face");
 //                dispatchTakePictureIntent();
+                name.setText("你点击的是的人叫？？？");
+                count.setText("照片中有？人");
+                similarity.setText("相似度为？");
+                ivTemp.setImageResource(R.drawable.init);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
                     StrictMode.setVmPolicy( builder.build() );
                 }
                 takePhotos();
+
+                Bitmap bitmap = decodeUriBitmap(imageUri);
+                String addFaceStr=ImageEncodeToString(bitmap);
+                String name3=addfaceName.getText().toString();
+                sendAddFaceWithOKHttp(addFaceStr,name3);
+
+
+            }
+        });
+
+
+
+
+
+        btnTakePhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "onClick: take photo");
+//                dispatchTakePictureIntent();
                 name.setText("你点击的是的人叫？？？");
                 count.setText("照片中有？人");
                 similarity.setText("相似度为？");
                 ivTemp.setImageResource(R.drawable.init);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                    StrictMode.setVmPolicy( builder.build() );
+                }
+                takePhotos();
+
             }
         });
 
@@ -439,6 +470,68 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void sendAddFaceWithOKHttp(final String image_str,final String name2) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    OkHttpClient client=new OkHttpClient.Builder()
+                            .connectTimeout(100,TimeUnit.SECONDS)
+                            .readTimeout(100,TimeUnit.SECONDS)
+                            .build();
+
+
+                    FormBody body=new FormBody.Builder()
+                            .add("image_str",image_str)
+                            .add("addFaceName",name2)
+                            .build();
+                    Log.d(TAG, "run: the image_str is :"+image_str);
+                    String url=etIp.getText().toString();
+
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .post(body)
+                            .build();
+                    //创建Call对象，代表实际的http请求，可以当做是Response与Request之间的桥梁
+                    Call call = client.newCall(request);
+                    call.enqueue(new Callback() {
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+                            Log.e("-----onFailure----", e.getMessage());
+                        }
+
+                        @Override
+                        public void onResponse(Call call, Response response) throws IOException {
+                            String responseData=response.body().string();
+                            Log.e("-----response----", responseData);
+//                            showResponse(response.body().string());
+                            try {
+                                JSONObject jsonObject = new JSONObject(responseData);
+                                String result = jsonObject.optString("result");
+                                if(result=="success")
+                                {
+                                    Toast.makeText(MainActivity.this,"插入成功",Toast.LENGTH_SHORT).show();
+                                }
+                                else
+                                {
+                                    Toast.makeText(MainActivity.this,"插入失败",Toast.LENGTH_SHORT).show();
+
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     private List<Location> handleLocation(String json_location) {

@@ -26,6 +26,25 @@
         android:layout_height="wrap_content"
         android:id="@+id/btn_take_photo"
         android:text="take photo"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        >
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_add_face"
+        android:text="add face"/>
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/addFaceName"
+            android:hint="请输入将要添加的人脸的名字"
+            />
+
+    </LinearLayout>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
