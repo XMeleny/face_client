@@ -69,9 +69,8 @@ public class MainActivity extends AppCompatActivity {
     Button btnGetPhoto;
     ImageView ivPhoto;
     ImageView ivTemp;
-    TextView count;
-    TextView name;
-    JSONArray jsonNames,jsonStr;
+    TextView count,name,similarity;
+    JSONArray jsonNames,jsonStr,jsonSimilarity;
     List<Location> locationList=new ArrayList<>();
     public static int TAKE_PHOTO_REQUEST_CODE = 1; //拍照
     public static int PHOTO_REQUEST_CUT = 2; //裁切
@@ -93,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         ivTemp=findViewById(R.id.iv_temp);
         count=findViewById(R.id.count);
         name=findViewById(R.id.name);
+        similarity=findViewById(R.id.similarity);
         ivPhoto.setAdjustViewBounds(true);
 
 //        int heightPixels = outMetrics.heightPixels;
@@ -114,6 +114,8 @@ public class MainActivity extends AppCompatActivity {
                 takePhotos();
                 name.setText("你点击的是的人叫？？？");
                 count.setText("照片中有？人");
+                similarity.setText("相似度为？");
+                ivTemp.setImageResource(R.drawable.init);
             }
         });
 
@@ -155,8 +157,17 @@ public class MainActivity extends AppCompatActivity {
 
                        try {
                            String name1=jsonNames.getString(i);
+                           String similarity1=jsonSimilarity.getString(i);
                            System.out.println("----click_name----"+name1);
                            name.setText("你点击的是的人叫" + name1);
+                           if(name1.equals("Unknown"))
+                           {
+                                similarity.setText("图库没有该人脸");
+                           }
+                           else
+                               {
+                               similarity.setText("相似度为" + similarity1);
+                           }
                            //点击的人脸的预存图片
                            String str = jsonStr.getString(i);
                            Bitmap bitmap1 = stringToBitmap(str);
@@ -172,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                if(k==0)
                 {
                     name.setText("没有点击到人脸哦");
-                    ivTemp.setImageResource(R.drawable.black);
+                    ivTemp.setImageResource(R.drawable.init);
                 }
 
                 return false;
@@ -417,7 +428,9 @@ public class MainActivity extends AppCompatActivity {
             String count1=jsonObject.optString("count");
             System.out.println("----count----"+count1);
             jsonNames= jsonObject.getJSONArray("names");
+            jsonSimilarity=jsonObject.getJSONArray("similarities");
             System.out.println("----names----"+jsonNames);
+            System.out.println("----names----"+jsonSimilarity);
             count.setText("照片中有"+count1+"人");
             jsonStr=jsonObject.getJSONArray("photo_str");
             System.out.println("----Pre-store picture str----"+jsonStr);
