@@ -10,22 +10,18 @@
         android:orientation="vertical"
         >
 
-        <EditText
+        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/et_ip"
-            android:hint="please input id"/>
+            android:id="@+id/btn_take_photo"
+            android:text="take photo"/>
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/count"
             android:text="照片中有？人"
             />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/btn_take_photo"
-            android:text="take photo"/>
+
 
 
         <TextView

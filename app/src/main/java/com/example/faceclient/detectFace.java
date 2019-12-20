@@ -63,7 +63,7 @@ public class detectFace extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    EditText etIp,addfaceName;
+    EditText addfaceName;
     Button addFace;
     Button btnTakePhoto;
     ImageView ivPhoto;
@@ -83,7 +83,6 @@ public class detectFace extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detect_face);
-        etIp=findViewById(R.id.et_ip);
 //        btnSend=findViewById(R.id.btn_send);
         btnTakePhoto=findViewById(R.id.btn_take_photo);
 //        btnGetPhoto=findViewById(R.id.btn_get_photo);
@@ -338,7 +337,6 @@ public class detectFace extends AppCompatActivity {
 
                             .build();
                     Log.d(TAG, "run: the image_str is :"+image_str);
-                    String url=etIp.getText().toString();
 //                    Request request=new Request.Builder()
 //                            .url(url)
 //                            .post(body)
@@ -355,6 +353,7 @@ public class detectFace extends AppCompatActivity {
 //                    Log.d(TAG, "run: "+responseData);
 //                    showResponse(responseData);
 
+                    String url="Http://118.89.44.161:5000/detectface";
                     Request request = new Request.Builder()
                             .url(url)
                             .post(body)
